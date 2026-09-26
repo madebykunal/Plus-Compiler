@@ -1,7 +1,12 @@
-export function runHtmlPreview(sourceCode: string): boolean {
-  const url = `/preview.html?run=${Date.now()}#${toBase64Url(sourceCode)}`;
-  const win = window.open(url, "plus-compiler-preview");
-  if (!win) return false;
+export const PREVIEW_TARGET = "plus-compiler-preview";
+
+export function previewUrl(sourceCode: string): string {
+  return `/preview.html?run=${Date.now()}#${toBase64Url(sourceCode)}`;
+}
+
+export function openPreviewTab(url: string): boolean {
+  const win = window.open(url, PREVIEW_TARGET);
+  if (!win || win.closed) return false;
   win.focus();
   return true;
 }

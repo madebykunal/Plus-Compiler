@@ -12,7 +12,7 @@ const appCsp = [
   "connect-src 'self'",
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
-  "frame-src 'none'",
+  "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -29,12 +29,15 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
         ],
+      },
+      {
+        source: "/:path((?!preview\\.html$).*)",
+        headers: [{ key: "X-Frame-Options", value: "DENY" }],
       },
       ...(isProduction
         ? [
@@ -49,7 +52,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "sandbox allow-scripts allow-forms allow-modals allow-popups allow-downloads",
+            value: "sandbox allow-scripts allow-forms allow-modals allow-popups allow-downloads; frame-ancestors 'self'",
           },
         ],
       },
