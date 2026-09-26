@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 type Props = {
   label: string;
@@ -8,7 +8,8 @@ type Props = {
   pressed?: boolean;
   haspopup?: boolean;
   disabled?: boolean;
-  onClick: () => void;
+  link?: { href: string; target: string; resolve: () => string };
+  onClick?: () => void;
   children: ReactNode;
 };
 
@@ -20,21 +21,41 @@ export function ActivityButton({
   pressed,
   haspopup,
   disabled,
+  link,
   onClick,
   children,
 }: Props) {
+  const shared = {
+    className: className ? `activity-btn ${className}` : "activity-btn",
+    "data-active": active || undefined,
+    "data-tooltip": shortcut ? `${label}  ·  ${shortcut}` : label,
+    "aria-label": label,
+    "aria-disabled": disabled || undefined,
+  };
+
+  if (link) {
+    const follow = (e: MouseEvent<HTMLAnchorElement>) => {
+      if (disabled) {
+        e.preventDefault();
+        return;
+      }
+      e.currentTarget.href = link.resolve();
+    };
+    return (
+      <a {...shared} href={link.href} target={link.target} onClick={follow} onAuxClick={follow}>
+        {children}
+      </a>
+    );
+  }
+
   return (
     <button
       type="button"
-      className={className ? `activity-btn ${className}` : "activity-btn"}
-      data-active={active || undefined}
-      data-tooltip={shortcut ? `${label}  ·  ${shortcut}` : label}
-      aria-label={label}
+      {...shared}
       aria-pressed={pressed}
       aria-haspopup={haspopup ? "dialog" : undefined}
-      aria-disabled={disabled || undefined}
       onClick={() => {
-        if (!disabled) onClick();
+        if (!disabled) onClick?.();
       }}
     >
       {children}

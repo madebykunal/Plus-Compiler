@@ -6,7 +6,6 @@ import { ApiKeyDialog } from "@/components/dialogs/ApiKeyDialog";
 import { LanguageDialog } from "@/components/dialogs/LanguageDialog";
 import { WelcomeDialog } from "@/components/dialogs/WelcomeDialog";
 import { Editor } from "@/components/editor/Editor";
-import { PreviewPanel } from "@/components/preview/PreviewPanel";
 import { OutputPanel } from "@/components/terminal/OutputPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useEditorSettings } from "@/hooks/useEditorSettings";
@@ -41,11 +40,7 @@ export default function Page() {
     setBarOpen((open) => !open);
   }, []);
 
-  const { runs, stdins, setStdin, setCode, inlinePreview, closeInlinePreview, run } = useRunner(
-    languageId,
-    apiKey,
-    showTerminal,
-  );
+  const { runs, stdins, setStdin, setCode, previewHref, run } = useRunner(languageId, apiKey, showTerminal);
   useShortcuts({ run, toggleBar, toggleTerminal });
 
   const language = getLanguage(languageId);
@@ -60,9 +55,6 @@ export default function Page() {
         <div className="editor-pane">
           <Editor language={language} fontSize={fontSize} onChange={onCodeChange} />
         </div>
-        {language.runner === "browser" && inlinePreview && (
-          <PreviewPanel url={inlinePreview} onClose={closeInlinePreview} />
-        )}
         {language.runner === "backend" && terminalOpen && (
           <OutputPanel
             state={runs[languageId]}
@@ -79,6 +71,7 @@ export default function Page() {
       <ActivityBar
         open={barOpen}
         onRun={run}
+        previewHref={previewHref}
         running={running}
         language={languageId}
         languageDialogOpen={languageDialogOpen}
