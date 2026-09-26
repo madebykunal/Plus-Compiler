@@ -1,0 +1,137 @@
+.output {
+  position: relative;
+    flex: 0 0 40%;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.terminal-resizer {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 8px;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.terminal-resizer::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--focus);
+  opacity: 0;
+  transition: opacity var(--ease);
+}
+
+.terminal-resizer:hover::after,
+.terminal-resizer:focus-visible::after,
+.is-resizing .terminal-resizer::after {
+  opacity: 1;
+}
+
+.terminal-resizer:focus-visible {
+  outline: none;
+}
+
+.is-resizing,
+.is-resizing * {
+  cursor: row-resize !important;
+  user-select: none;
+}
+
+.output-header {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.output-title {
+  font-weight: 600;
+}
+
+.badge {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.stdin {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 60px;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: #191a1d;
+  font-family: var(--font-mono);
+  font-size: var(--code-size, 18px);
+  line-height: 1.6;
+  outline: none;
+}
+
+.output-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--code-size, 18px);
+  line-height: 1.6;
+}
+
+.output-body p {
+  margin: 0;
+}
+
+.output-body pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.is-error {
+  color: var(--danger);
+}
+
+.is-error .status-line {
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 6px;
+  vertical-align: text-bottom;
+  background: var(--fg);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

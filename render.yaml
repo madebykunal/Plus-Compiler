@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: plus-compiler-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: RUST_LOG
+        value: info

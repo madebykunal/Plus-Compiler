@@ -1,0 +1,139 @@
+.activity-bar {
+  position: relative;
+    z-index: 2;
+  flex: 0 0 auto;
+  width: 48px;
+  background: #18191b;
+  border-left: 1px solid var(--border);
+  transition: width var(--slide), border-left-width var(--slide);
+}
+
+.activity-bar[data-open="false"] {
+  width: 0;
+  border-left-width: 0;
+  overflow: hidden;
+}
+
+.activity-bar-inner {
+  width: 47px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  transition: opacity var(--slide);
+}
+
+.activity-bar[data-open="false"] .activity-bar-inner {
+  opacity: 0;
+}
+
+.activity-spacer {
+  flex: 1;
+}
+
+.activity-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 47px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--ease);
+}
+
+.activity-btn:hover,
+.activity-btn[data-active] {
+  color: var(--fg);
+}
+
+.activity-btn[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.activity-btn[aria-disabled="true"]:hover {
+  color: var(--muted);
+}
+
+.activity-btn:focus-visible {
+  outline-offset: -4px;
+}
+
+.activity-btn svg {
+  transition: transform var(--ease);
+}
+
+.activity-btn:hover:not([aria-disabled="true"]) svg {
+  transform: scale(1.08);
+}
+
+.activity-btn:active:not([aria-disabled="true"]) svg {
+  transform: scale(0.94);
+}
+
+.activity-btn[data-active] .duo {
+  opacity: 0.4;
+}
+
+.activity-btn[data-active]::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 0;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--fg);
+}
+
+.activity-run,
+.activity-run:hover {
+  color: var(--accent-hover);
+}
+
+.activity-run:hover:not([aria-disabled="true"]) {
+  color: #3fb950;
+}
+
+.activity-dot {
+  position: absolute;
+  bottom: 10px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 2px #18191b;
+}
+
+.activity-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 6px);
+  transform: translateY(-50%);
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 12px;
+  white-space: pre;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.activity-btn:hover::after,
+.activity-btn:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 120ms ease 350ms, visibility 0s 350ms;
+}

@@ -1,0 +1,119 @@
+.dialog-welcome {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+
+.dialog-welcome .dialog-body {
+  gap: 24px;
+  padding: 32px 28px 24px;
+}
+
+.welcome-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.welcome-header .logo-mark {
+  border-radius: 12px;
+}
+
+.welcome-title {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.welcome-intro {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.welcome-points {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.welcome-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.welcome-point strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.welcome-point-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 0.5px;
+  color: var(--muted);
+}
+
+.welcome-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.welcome-shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.welcome-keys {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.welcome-tip {
+  margin: -8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.welcome-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.welcome-actions .btn {
+  height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-align: center;
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Preview</title>
+<script>
+  function decode(fragment) {
+    const base64 = fragment.replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  addEventListener("DOMContentLoaded", () => {
+    let html;
+    try {
+      html = location.hash.length > 1 ? decode(location.hash.slice(1)) : null;
+    } catch {
+      html = null;
+    }
+    document.open();
+    document.write(html ?? "<!doctype html><title>Preview</title><p>Press Run in Plus Compiler to preview your page here.</p>");
+    document.close();
+    if (!document.title) document.title = "Preview";
+  });
+</script>
