@@ -4,8 +4,6 @@ export function previewUrl(sourceCode: string): string {
   return `/preview.html?run=${Date.now()}#${toBase64Url(sourceCode)}`;
 }
 
-// Returns false when a pop-up blocker stopped the tab: most return null,
-// some hand back a window that is already closed.
 export function openPreviewTab(url: string): boolean {
   const win = window.open(url, PREVIEW_TARGET);
   if (!win || win.closed) return false;

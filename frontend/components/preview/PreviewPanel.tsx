@@ -8,8 +8,6 @@ type Props = {
   onClose: () => void;
 };
 
-// Shown when the browser blocks the preview tab. The frame has no
-// allow-same-origin, so user code can't reach the app's storage.
 export function PreviewPanel({ url, onClose }: Props) {
   return (
     <section className="output preview" aria-label="Preview">
