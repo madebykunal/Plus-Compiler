@@ -1,35 +1,91 @@
 # Plus Compiler
 
-A minimal dark playground for HTML/CSS/JS, C, and Rust. Editor, terminal, and a VS Code style icon bar on the right, nothing else.
+A minimal, dark code playground for **HTML/CSS/JS**, **C** and **Rust**. It's just an editor, a terminal and a slim icon bar, with no sign-up needed.
 
-- **HTML/CSS/JS** opens in a real browser tab at `/preview.html`, with the code carried in the URL fragment (it never reaches a server). It's a normal page, so extensions such as Figma's capture tools can read it. There is no output panel for it.
-- **C and Rust** are *simulated*: the backend asks an AI model to act as gcc / rustc plus the runtime and returns `{ status, output }`. Each visitor brings their own key from OpenAI, Anthropic, Gemini or OpenRouter (the key icon on the right).
+- **HTML, CSS and JavaScript** open in a new browser tab as a real page, so you can see and interact with your work right away.
+- **C and Rust** run through an AI model that acts as the compiler and runtime. You get compiler errors, panics and program output the way `gcc` or `rustc` would show them. You bring your own API key.
 
-```
-frontend/                Next.js + Monaco, deployed on Vercel
-  app/                   layout and the page that wires everything together
-  components/            activity-bar, dialogs, editor, icons, terminal
-  hooks/                 page state: API key, settings, runner, shortcuts, dialogs
-  lib/                   API client, key storage, providers, languages, helpers
-  styles/                one stylesheet per area
-  scripts/               Monaco self-hosting and favicon tools
-backend/                 Rust + Axum, POST /api/execute and GET /healthz, deployed on Render
-  src/ai/                prompt, provider clients, reply parsing, error messages
-  src/routes/            the execute route and request header parsing
-render.yaml              Render blueprint for the backend (free plan, Docker)
-```
+> C and Rust results are *simulated* by AI. They're usually right, but not always. Don't rely on them for anything critical.
 
-## Run it locally
+## Features
 
-Backend (port 8080):
+- A VS Code style editor (Monaco) with syntax highlighting for all three languages
+- Each language keeps its own code, undo history and scroll position when you switch
+- A terminal with optional **stdin** input for C and Rust programs
+- A resizable terminal and adjustable font size, both remembered in your browser
+- Keyboard shortcuts for everything you do often
+- Works with API keys from **OpenAI**, **Anthropic**, **Gemini** and **OpenRouter**
+
+## Getting started
+
+1. Open the app. A short welcome guide appears on your first visit.
+2. Pick a language with the **code** icon on the right.
+3. Write your code and press **Run** (the play icon) or `Cmd/Ctrl + Enter`.
+4. To run C or Rust, click the **key** icon and paste an API key first.
+
+Hover over any icon on the right to see what it does. The **?** icon opens the welcome guide again at any time.
+
+## Keyboard shortcuts
+
+Use `Cmd` on macOS and `Ctrl` everywhere else.
+
+| Shortcut | Action |
+| --- | --- |
+| `Cmd/Ctrl + Enter` | Run the code |
+| `Cmd/Ctrl + E` | Show or hide the icon bar |
+| `Cmd/Ctrl + J` | Show or hide the terminal (C and Rust) |
+
+To resize the terminal, drag its top edge, or focus it and use the arrow keys.
+
+## Using your API key
+
+C and Rust need a key from one of these providers. The app recognizes which one from the key itself.
+
+| Provider | Key starts with | Get a key |
+| --- | --- | --- |
+| Anthropic | `sk-ant-` | [console.anthropic.com](https://console.anthropic.com) |
+| OpenAI | `sk-` | [platform.openai.com](https://platform.openai.com/api-keys) |
+| Gemini | `AQ.` or `AIza` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| OpenRouter | `sk-or-` | [openrouter.ai](https://openrouter.ai/keys) |
+
+Each run uses your provider account, so normal API charges apply.
+
+### How your key is kept safe
+
+- **Encrypted in your browser.** The key is saved in your browser only, encrypted with a key that can't be read or exported. Anyone looking at the site's storage sees only scrambled data.
+- **Never shown again.** After you save it, the app only displays a masked version like `sk-ant-••••1234`.
+- **Sent only when you run code.** The key goes to this app's server over HTTPS, which passes it straight to your provider. It is never logged or stored on the server.
+- **Isolated previews.** Your HTML/CSS/JS previews run in a sandbox, so code you paste in can't read your key.
+- **No third-party scripts.** Everything the page loads comes from this site. A strict security policy stops the page from sending data anywhere else.
+
+You can remove your key at any time from the key dialog.
+
+## Privacy
+
+- HTML/CSS/JS previews run entirely in your browser. That code is never sent to a server.
+- C and Rust code is sent to the server and on to your chosen AI provider only when you press Run. It isn't stored.
+- Settings like font size are kept in your browser's local storage.
+
+## Limits
+
+- One file per program, up to 20,000 characters
+- stdin up to 10,000 characters
+- Up to 10 runs per minute per browser session
+- The program runs without command-line arguments
+
+## Run it yourself
+
+You'll need [Rust](https://rustup.rs) and [Node.js](https://nodejs.org) 20.9 or newer.
+
+Start the backend on port 8080:
 
 ```sh
 cd backend
-cp .env.example .env        # optional: a fallback ANTHROPIC_API_KEY
+cp .env.example .env
 cargo run
 ```
 
-Frontend (port 3000), in a second terminal:
+Start the frontend on port 3000 in a second terminal:
 
 ```sh
 cd frontend
@@ -37,120 +93,53 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The frontend proxies `/api/execute` to the backend (set `BACKEND_URL` if it isn't on `http://127.0.0.1:8080`), so the browser never talks to the AI provider directly.
+Open http://localhost:3000. If the backend runs somewhere other than `http://127.0.0.1:8080`, set `BACKEND_URL` for the frontend.
 
-Shortcuts (Cmd on macOS, Ctrl elsewhere; they take priority over the browser's own):
+### Configuration
 
-| keys | action |
-| --- | --- |
-| `Cmd/Ctrl + Enter` | run |
-| `Cmd/Ctrl + E` | show / hide the icon bar |
-| `Cmd/Ctrl + J` | show / hide the terminal (C and Rust) |
+The backend is configured through environment variables. See `backend/.env.example` for the full list.
 
-The icon bar has Run, Language, bigger / smaller text, API key, and the terminal toggle at the bottom; hover an icon for its name. Drag the terminal's top edge (or focus it and use the arrow keys) to resize it between 40% and 70% of the height. Font size and terminal height are remembered per browser. Hiding the icon bar leaves nothing on screen; `Cmd/Ctrl + E` or a reload brings it back.
+| Variable | Default | Description |
+| --- | --- | --- |
+| `FALLBACK_API_KEY` | none | Optional server-side key for requests without a key. Leave it empty on public servers. |
+| `ANTHROPIC_MODEL` | `claude-opus-5` | Model used for Anthropic keys |
+| `OPENAI_MODEL` | `gpt-6-sol` | Model used for OpenAI keys |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Model used for Gemini keys |
+| `OPENROUTER_MODEL` | `anthropic/claude-opus-5` | Any OpenRouter model that supports structured outputs |
+| `MAX_CODE_CHARS` | `20000` | Maximum program length |
+| `RATE_LIMIT_PER_MINUTE` | `10` | Runs per browser session per minute |
+| `RATE_LIMIT_GLOBAL_PER_MINUTE` | `60` | Runs across all users per minute |
 
-On a first visit, a short welcome dialog explains the app, that C and Rust results come from AI, and the shortcuts. Dismissing it sets `plus-compiler-welcome-seen` in localStorage. The **?** icon above the terminal icon reopens it any time.
+### API
 
-## API keys
+`POST /api/execute` with a JSON body:
 
-Click the key icon on the right and paste a key from any supported provider. The provider is detected from the key's prefix:
-
-| provider | key starts with | API used | default model |
-| --- | --- | --- | --- |
-| Anthropic | `sk-ant-` | Messages | `claude-opus-5` |
-| OpenRouter | `sk-or-` | Chat Completions | `anthropic/claude-opus-5` |
-| OpenAI | `sk-` | Responses | `gpt-6-sol` |
-| Gemini | `AQ.` (or older `AIza`) | `generateContent` | `gemini-3.8-flash` |
-
-Every provider is asked for the same `{ status, output }` JSON through its structured output feature, and the reply is validated before it's shown. Models are set on the backend (see below).
-
-How the key is protected:
-
-- **In the browser:** stored in IndexedDB, AES-GCM encrypted with a non-extractable key generated in the browser. Storage viewers only see ciphertext, and the dialog only ever shows a mask (`sk-ant-••••1234`).
-- **HTML previews** are served with `Content-Security-Policy: sandbox` (no `allow-same-origin`), so pasted-in HTML/JS runs in an opaque origin and can't read the key or navigate the app's tab.
-- **In transit:** sent only to this app's own `/api/execute` as an `X-Api-Key` header, which the backend forwards to that key's provider. It is never logged, stored, or echoed back.
-- **Framing** is blocked (`X-Frame-Options: DENY`), so another site can't embed the app to phish the key.
-
-- **No third-party scripts:** Monaco is served from the app's own origin (copied from `node_modules` into `public/monaco` at build time), and a Content-Security-Policy with `connect-src 'self'` stops page scripts from sending anything to other origins.
-- **Logs:** if a provider ever echoes the key back in an error, it's masked before logging or display.
-
-Any script running on this page can still use the key, so only load code you trust.
-
-## Deploy (free)
-
-The backend goes to Render's free plan and the frontend to Vercel's Hobby plan. Deploy the backend first, because the frontend needs its URL at build time.
-
-### 1. Backend on Render
-
-1. Sign in at [render.com](https://render.com) with GitHub, then choose **New → Blueprint** and pick this repo. Render reads `render.yaml` and builds `backend/Dockerfile` on the free plan.
-2. Wait for the first deploy and copy the service URL, e.g. `https://plus-compiler-backend.onrender.com`. Opening `/healthz` should return `ok`.
-3. Leave `FALLBACK_API_KEY` unset on a public deployment. Visitors then pay for their own runs with their own keys, and nobody can spend yours.
-
-Free Render services sleep after about 15 minutes idle; the first C/Rust run after that can take up to a minute while the service wakes.
-
-### 2. Frontend on Vercel
-
-1. At [vercel.com/new](https://vercel.com/new), import this repo.
-2. Set **Root Directory** to `frontend`. The framework is detected as Next.js.
-3. Add the environment variable `BACKEND_URL` = the Render URL from step 1 (https, no trailing slash).
-4. Deploy. Redeploy after changing `BACKEND_URL`, since rewrites are resolved at build time.
-
-The browser only ever calls the Vercel app's own `/api/execute`; Vercel proxies it to Render over HTTPS.
-
-## Try the route directly
-
-```sh
-curl -s localhost:8080/api/execute -H 'content-type: application/json' \
-  -d '{"language":"rust","code":"fn main() { let s = String::from(\"hi\"); let t = s; println!(\"{s}\"); }"}'
+```json
+{ "language": "rust", "code": "fn main() { println!(\"hi\"); }", "stdin": "" }
 ```
 
-## API
+Send your provider key in the `X-Api-Key` header. Every response, including errors, has the same shape:
 
-`POST /api/execute`
+```json
+{ "status": "ok" | "compile_error" | "runtime_error", "output": "..." }
+```
 
-| request field | type | notes |
-| --- | --- | --- |
-| `language` | string | `"c"` or `"rust"` |
-| `code` | string | full source, one file, max 20,000 chars |
-| `stdin` | string, optional | pre-filled input |
-
-| request header | notes |
-| --- | --- |
-| `X-Api-Key` | the visitor's OpenAI, Anthropic, Gemini or OpenRouter key; falls back to the server's `FALLBACK_API_KEY` when absent |
-
-Every response, including errors (400 bad input, 429 rate limited), is `{ "status": "ok" | "compile_error" | "runtime_error", "output": string }`.
-
-## Backend config
-
-All via environment (see `backend/.env.example`):
-
-| var | default | |
-| --- | --- | --- |
-| `FALLBACK_API_KEY` | none | any provider's key, for requests without their own (`ANTHROPIC_API_KEY` also works) |
-| `ANTHROPIC_MODEL` | `claude-opus-5` | |
-| `ANTHROPIC_EFFORT` | `high` | how hard the model thinks before answering |
-| `ANTHROPIC_FALLBACKS` | `default` | server-side refusal fallback; set empty to disable |
-| `OPENAI_MODEL` | `gpt-6-sol` | |
-| `OPENAI_EFFORT` | `high` | `reasoning.effort`; set empty for models without reasoning |
-| `GEMINI_MODEL` | `gemini-3.8-flash` | |
-| `OPENROUTER_MODEL` | `anthropic/claude-opus-5` | any OpenRouter model that supports structured outputs |
-| `*_BASE_URL` | each provider's API | `ANTHROPIC_`, `OPENAI_`, `GEMINI_`, `OPENROUTER_`; for proxies |
-| `HOST` / `PORT` | `127.0.0.1` / `8080` | the Docker image sets `HOST=0.0.0.0`; Render sets `PORT` |
-| `MAX_CODE_CHARS` | `20000` | |
-| `RATE_LIMIT_PER_MINUTE` | `10` | per browser session |
-| `RATE_LIMIT_GLOBAL_PER_MINUTE` | `60` | across everyone, caps spend |
-
-## Tests
+### Tests
 
 ```sh
 cd backend && cargo test
 cd frontend && npm run typecheck
 ```
 
-## Growing it
+## Tech stack
 
-- **New language:** add an entry to `frontend/lib/languages.ts` and a case in `backend/src/ai/prompt.rs` (plus the `Language` enum).
-- **Real execution instead of AI:** replace `AiClient::simulate` in `backend/src/ai/client.rs`; the route and frontend only see `RunResult`.
-- **New AI provider:** add a module in `backend/src/ai/providers/` (build the request, read the reply), a `Provider` variant with its key prefix, and the same prefix in `frontend/lib/providers.ts`.
-- **Logo:** `public/favicon.svg` and `components/Logo.tsx` hold the mark; `npm run favicon:png` regenerates the 32×32 png fallback.
-- **Monaco version:** bump `monaco-editor` in `frontend/package.json`; `npm run dev` / `npm run build` recopy it into `public/monaco`.
+- **Frontend:** Next.js, React and the Monaco editor
+- **Backend:** Rust with Axum
+
+## Contributing
+
+Issues and pull requests are welcome. Some good places to start:
+
+- **Add a language:** add an entry in `frontend/lib/languages.ts` and a matching case in `backend/src/ai/prompt.rs`.
+- **Add an AI provider:** add a module in `backend/src/ai/providers/` and its key prefix in `frontend/lib/providers.ts`.
+- **Real compilation:** replace `AiClient::simulate` in `backend/src/ai/client.rs`. Nothing else depends on how a run happens.
