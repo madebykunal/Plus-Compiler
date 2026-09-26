@@ -1,14 +1,15 @@
+export const PREVIEW_PATH = "/preview.html";
 export const PREVIEW_TARGET = "plus-compiler-preview";
 
 export function previewUrl(sourceCode: string): string {
-  return `/preview.html?run=${Date.now()}#${toBase64Url(sourceCode)}`;
+  return `${PREVIEW_PATH}?run=${Date.now()}#${toBase64Url(sourceCode)}`;
 }
 
-export function openPreviewTab(url: string): boolean {
-  const win = window.open(url, PREVIEW_TARGET);
-  if (!win || win.closed) return false;
-  win.focus();
-  return true;
+export function openPreviewTab(url: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = PREVIEW_TARGET;
+  link.click();
 }
 
 function toBase64Url(text: string): string {

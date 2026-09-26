@@ -5,6 +5,7 @@ import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "@/lib/constants";
 import { getLanguage, type LanguageId } from "@/lib/languages";
 import { useModKeyLabel } from "@/lib/platform";
 import { detectProvider } from "@/lib/providers";
+import { PREVIEW_PATH, PREVIEW_TARGET } from "@/lib/runHtmlPreview";
 import {
   CodeIcon,
   FontLargerIcon,
@@ -19,6 +20,7 @@ import { ActivityButton } from "./ActivityButton";
 type Props = {
   open: boolean;
   onRun: () => void;
+  previewHref: () => string;
   running: boolean;
   language: LanguageId;
   languageDialogOpen: boolean;
@@ -37,6 +39,7 @@ type Props = {
 function ActivityBarView({
   open,
   onRun,
+  previewHref,
   running,
   language,
   languageDialogOpen,
@@ -63,6 +66,7 @@ function ActivityBarView({
           label={running ? "Running…" : "Run"}
           shortcut={`${mod} Enter`}
           className="activity-run"
+          link={hasTerminal ? undefined : { href: PREVIEW_PATH, target: PREVIEW_TARGET, resolve: previewHref }}
           onClick={onRun}
           disabled={running}
         >

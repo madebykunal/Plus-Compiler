@@ -8,17 +8,6 @@
   background: var(--bg);
 }
 
-.preview {
-  flex-basis: 50%;
-}
-
-.preview-frame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  background: #ffffff;
-}
-
 .terminal-resizer {
   position: absolute;
   top: -4px;
