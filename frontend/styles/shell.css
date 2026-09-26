@@ -21,11 +21,3 @@
   padding: 14px;
   color: var(--muted);
 }
-
-.notice {
-  margin: 0;
-  padding: 9px 14px;
-  background: rgba(244, 112, 103, 0.1);
-  border-bottom: 1px solid rgba(244, 112, 103, 0.35);
-  color: var(--danger);
-}

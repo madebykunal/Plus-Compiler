@@ -3,12 +3,12 @@ import type { RunState } from "@/components/terminal/types";
 import { execute } from "@/lib/api";
 import { getLanguage, type LanguageId } from "@/lib/languages";
 import { perLanguage, type PerLanguage } from "@/lib/perLanguage";
-import { runHtmlPreview } from "@/lib/runHtmlPreview";
+import { openPreviewTab, previewUrl } from "@/lib/runHtmlPreview";
 
 export function useRunner(languageId: LanguageId, apiKey: string | null, onBackendRun: () => void) {
   const [runs, setRuns] = useState<PerLanguage<RunState>>(() => perLanguage(() => ({ kind: "idle" })));
   const [stdins, setStdins] = useState<PerLanguage<string>>(() => perLanguage(() => ""));
-  const [previewBlocked, setPreviewBlocked] = useState(false);
+  const [inlinePreview, setInlinePreview] = useState<string | null>(null);
   const codes = useRef<PerLanguage<string> | null>(null);
   codes.current ??= perLanguage((id) => getLanguage(id).starter);
 
@@ -25,7 +25,8 @@ export function useRunner(languageId: LanguageId, apiKey: string | null, onBacke
     const code = codes.current![lang.id];
 
     if (lang.runner === "browser") {
-      setPreviewBlocked(!runHtmlPreview(code));
+      const url = previewUrl(code);
+      setInlinePreview(openPreviewTab(url) ? null : url);
       return;
     }
 
@@ -38,5 +39,7 @@ export function useRunner(languageId: LanguageId, apiKey: string | null, onBacke
     );
   }, [languageId, runs, stdins, apiKey, onBackendRun]);
 
-  return { runs, stdins, setStdin, setCode, previewBlocked, run };
+  const closeInlinePreview = useCallback(() => setInlinePreview(null), []);
+
+  return { runs, stdins, setStdin, setCode, inlinePreview, closeInlinePreview, run };
 }

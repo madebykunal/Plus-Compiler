@@ -6,6 +6,7 @@ import { ApiKeyDialog } from "@/components/dialogs/ApiKeyDialog";
 import { LanguageDialog } from "@/components/dialogs/LanguageDialog";
 import { WelcomeDialog } from "@/components/dialogs/WelcomeDialog";
 import { Editor } from "@/components/editor/Editor";
+import { PreviewPanel } from "@/components/preview/PreviewPanel";
 import { OutputPanel } from "@/components/terminal/OutputPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useEditorSettings } from "@/hooks/useEditorSettings";
@@ -40,7 +41,11 @@ export default function Page() {
     setBarOpen((open) => !open);
   }, []);
 
-  const { runs, stdins, setStdin, setCode, previewBlocked, run } = useRunner(languageId, apiKey, showTerminal);
+  const { runs, stdins, setStdin, setCode, inlinePreview, closeInlinePreview, run } = useRunner(
+    languageId,
+    apiKey,
+    showTerminal,
+  );
   useShortcuts({ run, toggleBar, toggleTerminal });
 
   const language = getLanguage(languageId);
@@ -52,15 +57,12 @@ export default function Page() {
   return (
     <div className="app" style={{ "--code-size": `${fontSize}px` } as CSSProperties}>
       <main className="workspace">
-        {language.runner === "browser" && previewBlocked && (
-          <p className="notice" role="alert">
-            Your browser blocked the preview tab. Allow pop-ups for this site, then press Run again.
-          </p>
-        )}
-
         <div className="editor-pane">
           <Editor language={language} fontSize={fontSize} onChange={onCodeChange} />
         </div>
+        {language.runner === "browser" && inlinePreview && (
+          <PreviewPanel url={inlinePreview} onClose={closeInlinePreview} />
+        )}
         {language.runner === "backend" && terminalOpen && (
           <OutputPanel
             state={runs[languageId]}
