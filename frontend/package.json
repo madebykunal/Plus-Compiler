@@ -24,6 +24,11 @@
     "@types/react-dom": "^19",
     "typescript": "^5"
   },
+  "overrides": {
+    "monaco-editor": {
+      "dompurify": "^3.4.16"
+    }
+  },
   "engines": {
     "node": ">=20.9"
   }

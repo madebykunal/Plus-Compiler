@@ -9,6 +9,7 @@
   --accent-hover: #2ea043;
   --focus: #4d8ef7;
   --danger: #f47067;
+  --warn: #d4a72c;
   --radius: 6px;
   --ease: 140ms ease;
   --slide: 220ms cubic-bezier(0.2, 0, 0, 1);

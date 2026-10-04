@@ -46,7 +46,10 @@ export function WelcomeDialog({ open, onClose, onAddKey }: Props) {
 
         <ul className="welcome-points">
           <Point icon={<CodeIcon size={20} />}>
-            <strong>HTML, CSS and JavaScript</strong> open in a new tab.
+            <strong>HTML, CSS and JavaScript</strong> pages open in a new tab.
+          </Point>
+          <Point icon={<TerminalIcon size={20} />}>
+            <strong>JavaScript and TypeScript</strong> programs run safely in your browser, with a console.
           </Point>
           <Point icon={<TerminalIcon size={20} />}>
             <strong>C and Rust</strong> are run by AI. Results are usually right, but not always.

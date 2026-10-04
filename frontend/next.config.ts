@@ -12,11 +12,19 @@ const appCsp = [
   "connect-src 'self'",
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
-  "frame-src 'none'",
+  "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+].join("; ");
+
+const sandboxCsp = [
+  "sandbox allow-scripts",
+  "default-src 'none'",
+  "script-src 'unsafe-inline' 'unsafe-eval' blob:",
+  "worker-src blob:",
+  "frame-ancestors 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -39,7 +47,7 @@ const nextConfig: NextConfig = {
       ...(isProduction
         ? [
             {
-              source: "/:path((?!preview\\.html$).*)",
+              source: "/:path((?!preview\\.html$|sandbox\\.html$).*)",
               headers: [{ key: "Content-Security-Policy", value: appCsp }],
             },
           ]
@@ -51,6 +59,13 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: "sandbox allow-scripts allow-forms allow-modals allow-popups allow-downloads",
           },
+        ],
+      },
+      {
+        source: "/sandbox.html",
+        headers: [
+          { key: "Content-Security-Policy", value: sandboxCsp },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
       {

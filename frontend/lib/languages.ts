@@ -1,19 +1,25 @@
-export type LanguageId = "html" | "c" | "rust";
+export type LanguageId = "html" | "javascript" | "typescript" | "c" | "rust";
 
 export type Language = {
   id: LanguageId;
   label: string;
+  fileName: string;
   monacoLanguage: string;
-  runner: "browser" | "backend";
+  tabSize: number;
+  runner: "preview" | "sandbox" | "backend";
   starter: string;
 };
+
+export type SandboxLanguageId = "javascript" | "typescript";
 
 export const LANGUAGES: Language[] = [
   {
     id: "html",
     label: "HTML/CSS/JS",
+    fileName: "main.html",
     monacoLanguage: "html",
-    runner: "browser",
+    tabSize: 2,
+    runner: "preview",
     starter: `<!doctype html>
 <html>
   <head>
@@ -40,9 +46,49 @@ export const LANGUAGES: Language[] = [
 `,
   },
   {
+    id: "javascript",
+    label: "JavaScript",
+    fileName: "main.js",
+    monacoLanguage: "javascript",
+    tabSize: 2,
+    runner: "sandbox",
+    starter: `const name = prompt("What's your name?") ?? "world";
+console.log(\`Hello, \${name}!\`);
+
+const scores = [72, 88, 95];
+const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+console.log({ scores, average });
+`,
+  },
+  {
+    id: "typescript",
+    label: "TypeScript",
+    fileName: "main.ts",
+    monacoLanguage: "typescript",
+    tabSize: 2,
+    runner: "sandbox",
+    starter: `type Student = { name: string; score: number };
+
+const students: Student[] = [
+  { name: "Ada", score: 92 },
+  { name: "Linus", score: 78 },
+];
+
+function grade(score: number): string {
+  return score >= 90 ? "A" : score >= 80 ? "B" : "C";
+}
+
+for (const student of students) {
+  console.log(\`\${student.name}: \${grade(student.score)}\`);
+}
+`,
+  },
+  {
     id: "c",
     label: "C",
+    fileName: "main.c",
     monacoLanguage: "c",
+    tabSize: 4,
     runner: "backend",
     starter: `#include <stdio.h>
 
@@ -59,7 +105,9 @@ int main(void) {
   {
     id: "rust",
     label: "Rust",
+    fileName: "main.rs",
     monacoLanguage: "rust",
+    tabSize: 4,
     runner: "backend",
     starter: `fn main() {
     let words = vec!["plus", "compiler"];

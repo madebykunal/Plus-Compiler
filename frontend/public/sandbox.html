@@ -1,0 +1,425 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:"
+/>
+<title>Sandbox</title>
+<script>
+  "use strict";
+
+  function sandboxWorker() {
+    const nativeSetTimeout = setTimeout;
+    const nativeClearTimeout = clearTimeout;
+    const nativeSetInterval = setInterval;
+    const nativeClearInterval = clearInterval;
+    const MAX_DEPTH = 2;
+    const MAX_ITEMS = 100;
+    const MAX_WIDTH = 72;
+
+    self.onmessage = (event) => {
+      self.onmessage = null;
+      const port = event.ports[0];
+      if (port) start(event.data, port.postMessage.bind(port));
+    };
+
+    function start({ code, fileName, module, lineMap, stdin, limits }, post) {
+      const timers = new Set();
+      const counts = new Map();
+      const clocks = new Map();
+      const input = stdin ? stdin.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n") : [];
+      let lines = 0;
+      let chars = 0;
+      let indent = "";
+      let mainDone = false;
+      let ended = false;
+      let warnedNoInput = false;
+
+      function end(message) {
+        if (ended) return;
+        ended = true;
+        for (const id of timers) nativeClearTimeout(id);
+        post(message);
+      }
+
+      function emit(level, text) {
+        if (ended) return;
+        if (indent) text = indent + text.replace(/\n/g, `\n${indent}`);
+        lines += 1;
+        chars += text.length;
+        if (lines > limits.lines || chars > limits.chars) return end({ type: "limit" });
+        post({ type: "line", level, text });
+      }
+
+      function settle() {
+        if (!mainDone || timers.size > 0) return;
+        nativeSetTimeout(() => {
+          nativeSetTimeout(() => {
+            if (mainDone && timers.size === 0) end({ type: "done" });
+          }, 0);
+        }, 0);
+      }
+
+      function fail(error) {
+        end({ type: "error", message: describeError(error) });
+      }
+
+      function describeError(error) {
+        if (!(error instanceof Error)) return `Uncaught ${inspect(error)}`;
+        let text = `Uncaught ${error.name}: ${error.message}`;
+        const at = typeof error.stack === "string" && error.stack.match(locationPattern);
+        const position = at && sourcePosition(Number(at[1]), Number(at[2]));
+        if (position) text += `\n    at ${fileName}:${position.line}:${position.column}`;
+        const usesModules =
+          (error instanceof ReferenceError && /\b(require|process|module)\b/.test(error.message)) ||
+          (error instanceof SyntaxError && /\b(import|export)\b/.test(error.message));
+        if (usesModules) text += "\n\nModules and Node.js APIs aren't available here. Use prompt() to read input.";
+        return text;
+      }
+
+      function sourcePosition(line, column) {
+        if (!lineMap) return { line, column: line === 1 ? column - wrapperPrefix.length : column };
+        const segments = lineMap[line - 1] ?? [];
+        let match;
+        for (const segment of segments) if (segment[0] <= column - 1) match = segment;
+        return match && { line: match[1] + 1, column: match[2] + 1 };
+      }
+
+      function readLine(message) {
+        const label = message === undefined ? "" : String(message);
+        if (input.length === 0) {
+          if (label) emit("log", label);
+          if (!warnedNoInput) {
+            warnedNoInput = true;
+            emit("warn", "No input left, so this returned null. Add input under + stdin, one line per call.");
+          }
+          return null;
+        }
+        const value = input.shift();
+        emit("log", label ? `${label} ${value}` : value);
+        return value;
+      }
+
+      function trackTimer(schedule, repeat) {
+        return (callback, delay, ...args) => {
+          if (typeof callback !== "function") throw new TypeError("The callback must be a function.");
+          const id = schedule(() => {
+            if (!repeat) timers.delete(id);
+            try {
+              callback(...args);
+            } catch (error) {
+              return fail(error);
+            }
+            if (!repeat) settle();
+          }, delay);
+          timers.add(id);
+          return id;
+        };
+      }
+
+      function untrackTimer(clear) {
+        return (id) => {
+          clear(id);
+          if (timers.delete(id)) settle();
+        };
+      }
+
+      const print = (level) => (...args) => emit(level, format(args));
+
+      const consoleApi = {
+        log: print("log"),
+        info: print("info"),
+        debug: print("debug"),
+        warn: print("warn"),
+        error: print("error"),
+        trace: (...args) => emit("log", args.length ? `Trace: ${format(args)}` : "Trace"),
+        dir: (value) => emit("log", inspect(value)),
+        dirxml: print("log"),
+        table: (data, columns) => emit("log", table(data, columns)),
+        assert: (condition, ...args) => {
+          if (!condition) emit("error", args.length ? `Assertion failed: ${format(args)}` : "Assertion failed");
+        },
+        count: (label = "default") => {
+          const next = (counts.get(String(label)) ?? 0) + 1;
+          counts.set(String(label), next);
+          emit("log", `${label}: ${next}`);
+        },
+        countReset: (label = "default") => counts.delete(String(label)),
+        time: (label = "default") => clocks.set(String(label), performance.now()),
+        timeLog: (label = "default", ...args) => logClock(String(label), args, false),
+        timeEnd: (label = "default") => logClock(String(label), [], true),
+        group: (...args) => {
+          if (args.length) emit("log", format(args));
+          indent += "  ";
+        },
+        groupCollapsed: (...args) => consoleApi.group(...args),
+        groupEnd: () => {
+          indent = indent.slice(2);
+        },
+        clear: () => {
+          if (!ended) post({ type: "clear" });
+        },
+      };
+
+      function logClock(label, args, stop) {
+        const startedAt = clocks.get(label);
+        if (startedAt === undefined) return emit("warn", `Timer '${label}' does not exist`);
+        if (stop) clocks.delete(label);
+        const elapsed = `${label}: ${(performance.now() - startedAt).toFixed(3)}ms`;
+        emit("log", args.length ? `${elapsed} ${format(args)}` : elapsed);
+      }
+
+      for (const [key, fn] of Object.entries(consoleApi)) console[key] = fn;
+
+      const globals = {
+        prompt: readLine,
+        confirm: (message) => {
+          const answer = readLine(message);
+          return answer !== null && /^(y|yes|true|ok|1)$/i.test(answer.trim());
+        },
+        alert: (message) => emit("log", message === undefined ? "" : String(message)),
+        setTimeout: trackTimer(nativeSetTimeout, false),
+        setInterval: trackTimer(nativeSetInterval, true),
+        clearTimeout: untrackTimer(nativeClearTimeout),
+        clearInterval: untrackTimer(nativeClearInterval),
+        requestAnimationFrame: undefined,
+        cancelAnimationFrame: undefined,
+      };
+      for (const [key, value] of Object.entries(globals)) {
+        Object.defineProperty(self, key, { value, writable: true, configurable: true });
+      }
+
+      self.addEventListener("error", (event) => {
+        event.preventDefault();
+        fail(event.error ?? event.message);
+      });
+      self.addEventListener("unhandledrejection", (event) => {
+        event.preventDefault();
+        fail(event.reason);
+      });
+
+      const entry = "__sandboxMain";
+      const wrapperPrefix = `self.${entry} = async () => {`;
+      const source = module ? code : `${wrapperPrefix}${code}\n};`;
+      const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+      const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const locationPattern = new RegExp(`${escapedUrl}:(\\d+):(\\d+)`);
+
+      async function main() {
+        if (module) {
+          await import(url);
+          return;
+        }
+        importScripts(url);
+        const run = self[entry];
+        delete self[entry];
+        await run();
+      }
+
+      post({ type: "ready" });
+      main().then(() => {
+        mainDone = true;
+        settle();
+      }, fail);
+    }
+
+    function format(args) {
+      let rest = args;
+      const parts = [];
+      if (typeof args[0] === "string" && args[0].includes("%")) {
+        let next = 1;
+        parts.push(
+          args[0].replace(/%([sdifjoOc%])/g, (match, type) => {
+            if (type === "%") return "%";
+            if (next >= args.length) return match;
+            const arg = args[next++];
+            switch (type) {
+              case "s":
+                return typeof arg === "string" ? arg : inspect(arg);
+              case "d":
+              case "i":
+              case "f":
+                if (typeof arg === "bigint") return `${arg}n`;
+                if (typeof arg === "symbol") return "NaN";
+                return String(type === "f" ? parseFloat(arg) : type === "i" ? parseInt(arg) : Number(arg));
+              case "j":
+                try {
+                  return JSON.stringify(arg);
+                } catch {
+                  return "[Circular]";
+                }
+              case "c":
+                return "";
+              default:
+                return inspect(arg);
+            }
+          }),
+        );
+        rest = args.slice(next);
+      }
+      for (const arg of rest) parts.push(typeof arg === "string" ? arg : inspect(arg));
+      return parts.join(" ");
+    }
+
+    function inspect(value, depth = 0, seen = []) {
+      if (value === null) return "null";
+      switch (typeof value) {
+        case "undefined":
+          return "undefined";
+        case "string":
+          return quote(value);
+        case "number":
+          return Object.is(value, -0) ? "-0" : String(value);
+        case "bigint":
+          return `${value}n`;
+        case "boolean":
+          return String(value);
+        case "symbol":
+          return value.toString();
+        case "function":
+          return describeFunction(value);
+      }
+      if (seen.includes(value)) return "[Circular]";
+      try {
+        return inspectObject(value, depth, [...seen, value]);
+      } catch {
+        return "[object]";
+      }
+    }
+
+    function quote(text) {
+      const escaped = text
+        .replace(/[\\']/g, "\\$&")
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r")
+        .replace(/\t/g, "\\t");
+      return `'${escaped}'`;
+    }
+
+    function describeFunction(fn) {
+      if (/^class\b/.test(Function.prototype.toString.call(fn))) return `[class ${fn.name || "(anonymous)"}]`;
+      return fn.name ? `[Function: ${fn.name}]` : "[Function (anonymous)]";
+    }
+
+    function constructorName(value) {
+      const proto = Object.getPrototypeOf(value);
+      if (proto === null) return null;
+      const name = proto.constructor && proto.constructor.name;
+      return typeof name === "string" ? name : "";
+    }
+
+    function formatKey(key) {
+      if (typeof key === "symbol") return `[${key.toString()}]`;
+      return /^[A-Za-z_$][\w$]*$/.test(key) ? key : quote(key);
+    }
+
+    function inspectObject(value, depth, seen) {
+      const child = (v) => inspect(v, depth + 1, seen);
+      const name = constructorName(value);
+
+      if (value instanceof Error) {
+        const text = `${value.name}: ${value.message}`;
+        return depth === 0 ? text : `[${text}]`;
+      }
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? "Invalid Date" : value.toISOString();
+      if (value instanceof RegExp) return String(value);
+      if (value instanceof Promise) return "Promise {}";
+      if (value instanceof WeakMap || value instanceof WeakSet) return `${name} { <items unknown> }`;
+
+      let prefix = "";
+      let open = "{";
+      let close = "}";
+      let entries;
+      let total;
+
+      if (Array.isArray(value) || (ArrayBuffer.isView(value) && !(value instanceof DataView))) {
+        if (depth > MAX_DEPTH) return "[Array]";
+        total = value.length;
+        if (!Array.isArray(value) || name !== "Array") prefix = `${name}(${total}) `;
+        open = "[";
+        close = "]";
+        entries = [];
+        for (let i = 0; i < Math.min(total, MAX_ITEMS); i++) entries.push(i in value ? child(value[i]) : "<empty>");
+      } else if (value instanceof Map) {
+        if (depth > MAX_DEPTH) return "[Map]";
+        total = value.size;
+        prefix = `Map(${total}) `;
+        entries = [...value].slice(0, MAX_ITEMS).map(([k, v]) => `${child(k)} => ${child(v)}`);
+      } else if (value instanceof Set) {
+        if (depth > MAX_DEPTH) return "[Set]";
+        total = value.size;
+        prefix = `Set(${total}) `;
+        entries = [...value].slice(0, MAX_ITEMS).map(child);
+      } else {
+        if (depth > MAX_DEPTH) return name ? `[${name}]` : "[Object]";
+        if (name === null) prefix = "[Object: null prototype] ";
+        else if (name && name !== "Object") prefix = `${name} `;
+        const keys = Reflect.ownKeys(value).filter((k) => Object.prototype.propertyIsEnumerable.call(value, k));
+        total = keys.length;
+        entries = keys.slice(0, MAX_ITEMS).map((key) => {
+          const descriptor = Object.getOwnPropertyDescriptor(value, key);
+          const shown =
+            descriptor && descriptor.get
+              ? descriptor.set
+                ? "[Getter/Setter]"
+                : "[Getter]"
+              : descriptor && descriptor.set
+                ? "[Setter]"
+                : child(value[key]);
+          return `${formatKey(key)}: ${shown}`;
+        });
+      }
+
+      if (total > MAX_ITEMS) entries.push(`... ${total - MAX_ITEMS} more items`);
+      if (entries.length === 0) return `${prefix}${open}${close}`;
+      const single = `${prefix}${open} ${entries.join(", ")} ${close}`;
+      if (single.length <= MAX_WIDTH && !single.includes("\n")) return single;
+      return `${prefix}${open}\n${entries.map((e) => `  ${e.replace(/\n/g, "\n  ")}`).join(",\n")}\n${close}`;
+    }
+
+    function table(data, columns) {
+      if (data === null || typeof data !== "object") return format([data]);
+      const rows =
+        Array.isArray(data) || data instanceof Set
+          ? [...data].map((row, i) => [String(i), row])
+          : data instanceof Map
+            ? [...data].map(([key, row]) => [inspect(key), row])
+            : Object.keys(data).map((key) => [key, data[key]]);
+      const isRecord = (row) => row !== null && typeof row === "object";
+      const cell = (v) => inspect(v, MAX_DEPTH).replace(/\n\s*/g, " ");
+
+      const keys = [];
+      let hasValues = false;
+      for (const [, row] of rows) {
+        if (!isRecord(row)) hasValues = true;
+        else for (const key of Object.keys(row)) if (!keys.includes(key)) keys.push(key);
+      }
+      const shownKeys = Array.isArray(columns) ? columns.map(String) : keys;
+      const header = ["(index)", ...shownKeys, ...(hasValues ? ["Values"] : [])];
+      const body = rows.map(([index, row]) => [
+        index,
+        ...shownKeys.map((key) => (isRecord(row) && key in row ? cell(row[key]) : "")),
+        ...(hasValues ? [isRecord(row) ? "" : cell(row)] : []),
+      ]);
+
+      const widths = header.map((h, c) => Math.max(h.length, ...body.map((r) => r[c].length)) + 2);
+      const rule = (left, mid, right) => left + widths.map((w) => "─".repeat(w)).join(mid) + right;
+      const line = (cells) => `│${cells.map((c, i) => ` ${c.padEnd(widths[i] - 1)}`).join("│")}│`;
+      return [rule("┌", "┬", "┐"), line(header), rule("├", "┼", "┤"), ...body.map(line), rule("└", "┴", "┘")].join("\n");
+    }
+  }
+
+  function onMessage(event) {
+    const port = event.ports[0];
+    if (event.source !== parent || !port) return;
+    removeEventListener("message", onMessage);
+    try {
+      const url = URL.createObjectURL(new Blob([`"use strict";(${sandboxWorker})();`], { type: "text/javascript" }));
+      new Worker(url).postMessage(event.data, [port]);
+    } catch (error) {
+      port.postMessage({ type: "fatal", message: `Could not start the JavaScript sandbox: ${error}` });
+    }
+  }
+
+  addEventListener("message", onMessage);
+</script>

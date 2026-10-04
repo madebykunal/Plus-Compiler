@@ -57,7 +57,7 @@ function ActivityBarView({
   const mod = useModKeyLabel();
   const lang = getLanguage(language);
   const provider = apiKey ? detectProvider(apiKey) : null;
-  const hasTerminal = lang.runner === "backend";
+  const hasTerminal = lang.runner !== "preview";
 
   return (
     <nav className="activity-bar" data-open={open} inert={!open} aria-label="Tools">
