@@ -3,6 +3,7 @@
 import { useCallback, useState, type CSSProperties } from "react";
 import { ActivityBar } from "@/components/activity-bar/ActivityBar";
 import { ApiKeyDialog } from "@/components/dialogs/ApiKeyDialog";
+import { ColdStartDialog } from "@/components/dialogs/ColdStartDialog";
 import { LanguageDialog } from "@/components/dialogs/LanguageDialog";
 import { WelcomeDialog } from "@/components/dialogs/WelcomeDialog";
 import { Editor } from "@/components/editor/Editor";
@@ -18,6 +19,7 @@ export default function Page() {
   const [languageId, setLanguageId] = useState<LanguageId>("html");
   const [keyDialogOpen, setKeyDialogOpen] = useState(false);
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
+  const [coldStartOpen, setColdStartOpen] = useState(false);
   const [barOpen, setBarOpen] = useState(true);
   const [terminalOpen, setTerminalOpen] = useState(true);
 
@@ -32,6 +34,15 @@ export default function Page() {
   const closeLanguageDialog = useCallback(() => setLanguageDialogOpen(false), []);
   const openKeyDialog = useCallback(() => setKeyDialogOpen(true), []);
   const closeKeyDialog = useCallback(() => setKeyDialogOpen(false), []);
+  const closeColdStart = useCallback(() => setColdStartOpen(false), []);
+
+  const saveKeyAndNotify = useCallback(
+    (key: string) => {
+      saveKey(key);
+      setColdStartOpen(true);
+    },
+    [saveKey],
+  );
 
   const toggleBar = useCallback(() => {
     if (document.activeElement?.closest(".activity-bar")) {
@@ -99,10 +110,12 @@ export default function Page() {
       <ApiKeyDialog
         open={keyDialogOpen}
         savedKey={apiKey}
-        onSave={saveKey}
+        onSave={saveKeyAndNotify}
         onRemove={removeKey}
         onClose={closeKeyDialog}
       />
+
+      <ColdStartDialog open={coldStartOpen} onClose={closeColdStart} />
 
       <WelcomeDialog open={welcome.open} onClose={welcome.dismiss} onAddKey={openKeyDialog} />
     </div>

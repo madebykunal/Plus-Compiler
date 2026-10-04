@@ -7,6 +7,9 @@ export type ExecuteResult = {
   output: string;
 };
 
+export const NO_KEY_MESSAGE =
+  "Add an API key from OpenAI, Anthropic, Gemini or OpenRouter with the key icon on the right to run C and Rust.";
+
 function sessionId(): string {
   let id = sessionStorage.getItem(STORAGE_KEYS.session);
   if (!id) {
