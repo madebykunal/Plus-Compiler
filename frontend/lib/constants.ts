@@ -6,6 +6,11 @@ export const TERMINAL_MIN = 40;
 export const TERMINAL_MAX = 70;
 export const TERMINAL_KEYBOARD_STEP = 2;
 
+export const SANDBOX_START_TIMEOUT_MS = 5_000;
+export const SANDBOX_RUN_TIMEOUT_MS = 10_000;
+export const SANDBOX_MAX_LINES = 10_000;
+export const SANDBOX_MAX_CHARS = 200_000;
+
 export const STORAGE_KEYS = {
   fontSize: "plus-compiler-font-size",
   terminalHeight: "plus-compiler-terminal-height",

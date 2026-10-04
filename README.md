@@ -1,17 +1,18 @@
 # Plus Compiler
 
-A minimal, dark code playground for **HTML/CSS/JS**, **C** and **Rust**. It's just an editor, a terminal and a slim icon bar, with no sign-up needed.
+A minimal, dark code playground for **HTML/CSS/JS**, **JavaScript**, **TypeScript**, **C** and **Rust**. It's just an editor, a terminal and a slim icon bar, with no sign-up needed.
 
 - **HTML, CSS and JavaScript** open in a new browser tab as a real page, so you can see and interact with your work right away.
+- **JavaScript and TypeScript** programs run in a locked-down sandbox in your browser, with a console for `console.log` output and `prompt()` input. TypeScript is type-checked first, the way `tsc` would. No AI, server or API key is involved.
 - **C and Rust** run through an AI model that acts as the compiler and runtime. You get compiler errors, panics and program output the way `gcc` or `rustc` would show them. You bring your own API key.
 
 > C and Rust results are *simulated* by AI. They're usually right, but not always. Don't rely on them for anything critical.
 
 ## Features
 
-- A VS Code style editor (Monaco) with syntax highlighting for all three languages
+- A VS Code style editor (Monaco) with syntax highlighting for every language, plus live type errors for TypeScript
 - Each language keeps its own code, undo history and scroll position when you switch
-- A terminal with optional **stdin** input for C and Rust programs
+- A terminal with optional **stdin** input. In JavaScript and TypeScript, each `prompt()` call reads the next line
 - A resizable terminal and adjustable font size, both remembered in your browser
 - Keyboard shortcuts for everything you do often
 - Works with API keys from **OpenAI**, **Anthropic**, **Gemini** and **OpenRouter**
@@ -31,9 +32,9 @@ Use `Cmd` on macOS and `Ctrl` everywhere else.
 
 | Shortcut | Action |
 | --- | --- |
-| `Cmd/Ctrl + Enter` | Run the code |
+| `Cmd/Ctrl + Enter` | Run the code (restarts a JavaScript or TypeScript program that is still running) |
 | `Cmd/Ctrl + E` | Show or hide the icon bar |
-| `Cmd/Ctrl + J` | Show or hide the terminal (C and Rust) |
+| `Cmd/Ctrl + J` | Show or hide the terminal (JavaScript, TypeScript, C and Rust) |
 
 To resize the terminal, drag its top edge, or focus it and use the arrow keys.
 
@@ -56,22 +57,31 @@ Each run uses your provider account, so normal API charges apply.
 - **Never shown again.** After you save it, the app only displays a masked version like `sk-ant-••••1234`.
 - **Sent only when you run code.** The key goes to this app's server over HTTPS, which passes it straight to your provider. It is never logged or stored on the server.
 - **Isolated previews.** Your HTML/CSS/JS previews run in a sandbox, so code you paste in can't read your key.
+- **Sandboxed programs.** JavaScript and TypeScript run in a background worker inside a sandboxed frame. They can't see the page, your key, the site's storage or the network, and they are stopped after 10 seconds or when you press Stop.
 - **No third-party scripts.** Everything the page loads comes from this site. A strict security policy stops the page from sending data anywhere else.
 
 You can remove your key at any time from the key dialog.
 
 ## Privacy
 
-- HTML/CSS/JS previews run entirely in your browser. That code is never sent to a server.
+- HTML/CSS/JS previews and JavaScript/TypeScript programs run entirely in your browser. That code is never sent to a server.
 - C and Rust code is sent to the server and on to your chosen AI provider only when you press Run. It isn't stored.
 - Settings like font size are kept in your browser's local storage.
 
 ## Limits
 
+C and Rust:
+
 - One file per program, up to 20,000 characters
 - stdin up to 10,000 characters
 - Up to 10 runs per minute per browser session
 - The program runs without command-line arguments
+
+JavaScript and TypeScript:
+
+- A run stops after 10 seconds, or after 10,000 lines or 200,000 characters of output
+- No network access, `import`s or Node.js modules such as `fs` or `readline`. Use `prompt()` for input
+- No DOM. Use the HTML/CSS/JS mode for pages
 
 ## Run it yourself
 
@@ -140,6 +150,6 @@ cd frontend && npm run typecheck
 
 Issues and pull requests are welcome. Some good places to start:
 
-- **Add a language:** add an entry in `frontend/lib/languages.ts` and a matching case in `backend/src/ai/prompt.rs`.
+- **Add a language:** add an entry in `frontend/lib/languages.ts`. For AI-run languages, also add a matching case in `backend/src/ai/prompt.rs`.
 - **Add an AI provider:** add a module in `backend/src/ai/providers/` and its key prefix in `frontend/lib/providers.ts`.
 - **Real compilation:** replace `AiClient::simulate` in `backend/src/ai/client.rs`. Nothing else depends on how a run happens.

@@ -40,11 +40,11 @@ export default function Page() {
     setBarOpen((open) => !open);
   }, []);
 
-  const { runs, stdins, setStdin, setCode, previewHref, run } = useRunner(languageId, apiKey, showTerminal);
+  const { runs, stdins, setStdin, setCode, previewHref, run, stop } = useRunner(languageId, apiKey, showTerminal);
   useShortcuts({ run, toggleBar, toggleTerminal });
 
   const language = getLanguage(languageId);
-  const running = runs[languageId].kind === "running";
+  const running = language.runner === "backend" && runs[languageId].kind === "running";
 
   const onCodeChange = useCallback((value: string) => setCode(languageId, value), [languageId, setCode]);
   const onStdinChange = useCallback((value: string) => setStdin(languageId, value), [languageId, setStdin]);
@@ -55,11 +55,13 @@ export default function Page() {
         <div className="editor-pane">
           <Editor language={language} fontSize={fontSize} onChange={onCodeChange} />
         </div>
-        {language.runner === "backend" && terminalOpen && (
+        {language.runner !== "preview" && terminalOpen && (
           <OutputPanel
+            runner={language.runner}
             state={runs[languageId]}
             stdin={stdins[languageId]}
             onStdinChange={onStdinChange}
+            onStop={stop}
             onClose={hideTerminal}
             height={terminalHeight}
             onResize={resizeTerminal}
