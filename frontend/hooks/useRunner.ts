@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RunState } from "@/components/terminal/types";
-import { execute } from "@/lib/api";
+import { execute, NO_KEY_MESSAGE } from "@/lib/api";
 import { compileScript } from "@/lib/compileScript";
 import { getLanguage, type LanguageId, type SandboxLanguageId } from "@/lib/languages";
 import { perLanguage, type PerLanguage } from "@/lib/perLanguage";
@@ -102,6 +102,10 @@ export function useRunner(languageId: LanguageId, apiKey: string | null, onTermi
     if (runs[lang.id].kind === "running") return;
     const setRun = (state: RunState) => setRuns((prev) => ({ ...prev, [lang.id]: state }));
     onTerminalRun();
+    if (!apiKey) {
+      setRun({ kind: "result", status: "runtime_error", output: NO_KEY_MESSAGE, lines: [] });
+      return;
+    }
     setRun({ kind: "running", startedAt: Date.now(), lines: [] });
     execute(lang.id as "c" | "rust", code, stdins[lang.id], apiKey).then((result) =>
       setRun({ kind: "result", ...result, lines: [] }),
